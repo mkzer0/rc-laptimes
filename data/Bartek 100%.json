@@ -1,0 +1,135 @@
+{
+  "documentType" : "com.gyfx.LapMonitor.raceJsonData",
+  "races" : [
+    {
+      "uuid" : "586E95F1-CC69-4897-B85B-63C820F3583F",
+      "extraTime" : 60,
+      "drivers" : [
+        {
+          "kind" : "driver",
+          "transponderId" : 96,
+          "name" : "Bartek",
+          "laps" : [
+            {
+              "kind" : "initial",
+              "endTimestamp" : 596,
+              "userIndex" : 0,
+              "duration" : 0
+            },
+            {
+              "endTimestamp" : 2233,
+              "kind" : "normal",
+              "duration" : 1637,
+              "userIndex" : 1
+            },
+            {
+              "duration" : 1640,
+              "userIndex" : 2,
+              "kind" : "normal",
+              "endTimestamp" : 3873
+            },
+            {
+              "endTimestamp" : 5611,
+              "userIndex" : 3,
+              "kind" : "normal",
+              "duration" : 1738
+            },
+            {
+              "kind" : "normal",
+              "endTimestamp" : 7299,
+              "duration" : 1688,
+              "userIndex" : 4
+            },
+            {
+              "kind" : "normal",
+              "duration" : 1508,
+              "endTimestamp" : 8807,
+              "userIndex" : 5
+            },
+            {
+              "duration" : 1578,
+              "endTimestamp" : 10385,
+              "kind" : "normal",
+              "userIndex" : 6
+            },
+            {
+              "endTimestamp" : 12105,
+              "duration" : 1720,
+              "userIndex" : 7,
+              "kind" : "normal"
+            },
+            {
+              "kind" : "normal",
+              "userIndex" : 8,
+              "duration" : 1701,
+              "endTimestamp" : 13806
+            },
+            {
+              "userIndex" : 9,
+              "kind" : "normal",
+              "duration" : 1679,
+              "endTimestamp" : 15485
+            },
+            {
+              "kind" : "normal",
+              "duration" : 1667,
+              "endTimestamp" : 17152,
+              "userIndex" : 10
+            },
+            {
+              "duration" : 1636,
+              "endTimestamp" : 18788,
+              "userIndex" : 11,
+              "kind" : "normal"
+            },
+            {
+              "kind" : "normal",
+              "endTimestamp" : 20433,
+              "duration" : 1645,
+              "userIndex" : 12
+            },
+            {
+              "endTimestamp" : 22175,
+              "kind" : "normal",
+              "userIndex" : 13,
+              "duration" : 1742
+            },
+            {
+              "endTimestamp" : 23956,
+              "duration" : 1781,
+              "kind" : "normal",
+              "userIndex" : 14
+            },
+            {
+              "userIndex" : 15,
+              "endTimestamp" : 25470,
+              "duration" : 1514,
+              "kind" : "normal"
+            },
+            {
+              "endTimestamp" : 26934,
+              "userIndex" : 16,
+              "kind" : "normal",
+              "duration" : 1464
+            },
+            {
+              "kind" : "normal",
+              "userIndex" : 17,
+              "duration" : 1749,
+              "endTimestamp" : 28683
+            }
+          ],
+          "driverUuid" : "4158909A-79E7-4A94-9264-A3610096F883"
+        }
+      ],
+      "name" : "Bartek 100%",
+      "minLapTime" : 5,
+      "duration" : 300,
+      "date" : "2024-09-22T13:20:14+09:30",
+      "kind" : "race"
+    }
+  ],
+  "deviceUuid" : "341BE23C-7250-4492-A783-6D6392D4E52F",
+  "version" : "1.0.0",
+  "deviceName" : "iPhone"
+}

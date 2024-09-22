@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const app = express();
-const port = 5000;
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
@@ -34,6 +33,7 @@ app.get('/api/racedata', async (req, res) => {
 });
 
 // Start the server
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:3000`);
+  console.log(`Server running on port ${port}`);
 });

@@ -1,0 +1,111 @@
+{
+  "races" : [
+    {
+      "date" : "2024-09-22T13:13:34+09:30",
+      "name" : "Michael 100%",
+      "uuid" : "9A03DB10-5B34-4D2F-8337-E9B74215788F",
+      "kind" : "race",
+      "minLapTime" : 5,
+      "drivers" : [
+        {
+          "transponderId" : 96,
+          "kind" : "driver",
+          "name" : "Bartek",
+          "driverUuid" : "4158909A-79E7-4A94-9264-A3610096F883",
+          "laps" : [
+            {
+              "userIndex" : 0,
+              "endTimestamp" : 200,
+              "duration" : 0,
+              "kind" : "initial"
+            },
+            {
+              "userIndex" : 1,
+              "duration" : 2096,
+              "kind" : "normal",
+              "endTimestamp" : 2296
+            },
+            {
+              "kind" : "normal",
+              "userIndex" : 2,
+              "endTimestamp" : 4476,
+              "duration" : 2180
+            },
+            {
+              "kind" : "normal",
+              "userIndex" : 3,
+              "duration" : 1999,
+              "endTimestamp" : 6475
+            },
+            {
+              "endTimestamp" : 8157,
+              "kind" : "normal",
+              "duration" : 1682,
+              "userIndex" : 4
+            },
+            {
+              "endTimestamp" : 9859,
+              "userIndex" : 5,
+              "duration" : 1702,
+              "kind" : "normal"
+            },
+            {
+              "kind" : "normal",
+              "endTimestamp" : 12230,
+              "userIndex" : 6,
+              "duration" : 2371
+            },
+            {
+              "duration" : 1862,
+              "userIndex" : 7,
+              "kind" : "normal",
+              "endTimestamp" : 14092
+            },
+            {
+              "endTimestamp" : 15812,
+              "kind" : "normal",
+              "duration" : 1720,
+              "userIndex" : 8
+            },
+            {
+              "kind" : "normal",
+              "userIndex" : 9,
+              "endTimestamp" : 17768,
+              "duration" : 1956
+            },
+            {
+              "userIndex" : 10,
+              "duration" : 2840,
+              "kind" : "normal",
+              "endTimestamp" : 20608
+            },
+            {
+              "kind" : "normal",
+              "duration" : 1939,
+              "userIndex" : 11,
+              "endTimestamp" : 22547
+            },
+            {
+              "endTimestamp" : 24461,
+              "userIndex" : 12,
+              "kind" : "normal",
+              "duration" : 1914
+            },
+            {
+              "duration" : 4230,
+              "kind" : "normal",
+              "endTimestamp" : 28691,
+              "userIndex" : 13
+            }
+          ]
+        }
+      ],
+      "duration" : 300,
+      "extraTime" : 60
+    }
+  ],
+  "documentType" : "com.gyfx.LapMonitor.raceJsonData",
+  "version" : "1.0.0",
+  "deviceUuid" : "341BE23C-7250-4492-A783-6D6392D4E52F",
+  "deviceName" : "iPhone"
+}
