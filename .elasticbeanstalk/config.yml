@@ -3,7 +3,7 @@ branch-defaults:
     environment: lap-times-tracker-env
     group_suffix: null
   main:
-    environment: null
+    environment: rc-laptimes-website-dev
 global:
   application_name: rc-laptimes-website
   branch: null
