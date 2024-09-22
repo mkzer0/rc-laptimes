@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lap Times Tracker</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+        }
+        .table th {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Lap Times Tracker</h1>
+        <div class="mb-3">
+            <input type="text" id="filterInput" class="form-control" placeholder="Filter by driver or race name...">
+        </div>
+        <div class="table-responsive">
+            <table id="lapTable" class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Race Name</th>
+                        <th onclick="sortTable(1)">Driver Name</th>
+                        <th onclick="sortTable(2)">Lap Number</th>
+                        <th onclick="sortTable(3)">Lap Time (Raw)</th>
+                        <th onclick="sortTable(4)">Lap Date/Time</th>
+                    </tr>
+                </thead>
+                <tbody id="lapTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let allRaceData = [];
+
+        async function fetchRaceData() {
+            try {
+                const response = await fetch('/api/racedata');
+                allRaceData = await response.json();
+                populateTable(allRaceData);
+            } catch (error) {
+                console.error('Error fetching race data:', error);
+            }
+        }
+
+        function populateTable(raceData) {
+            const tableBody = document.getElementById('lapTableBody');
+            tableBody.innerHTML = '';
+
+            raceData.forEach((race) => {
+                const raceName = race.races[0].name;
+                const driverName = race.races[0].drivers[0].name;
+                const laps = race.races[0].drivers[0].laps;
+                const raceStartTime = new Date(race.races[0].date);
+
+                laps.forEach((lap, lapIndex) => {
+                    if (lap.kind === 'normal') {
+                        const row = tableBody.insertRow();
+                        row.insertCell(0).textContent = raceName;
+                        row.insertCell(1).textContent = driverName;
+                        row.insertCell(2).textContent = lapIndex;
+                        row.insertCell(3).textContent = lap.duration;
+                        
+                        const lapDateTime = new Date(raceStartTime.getTime() + lap.endTimestamp);
+                        row.insertCell(4).textContent = lapDateTime.toLocaleString();
+                    }
+                });
+            });
+        }
+
+        function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("lapTable");
+            switching = true;
+            dir = "asc";
+            
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    
+                    if (dir == "asc") {
+                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir == "desc") {
+                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+        }
+
+        function filterTable() {
+            const filterValue = document.getElementById('filterInput').value.toLowerCase();
+            const filteredData = allRaceData.filter(race => {
+                const driverName = race.races[0].drivers[0].name.toLowerCase();
+                const raceName = race.races[0].name.toLowerCase();
+                return driverName.includes(filterValue) || raceName.includes(filterValue);
+            });
+            populateTable(filteredData);
+        }
+
+        // Fetch race data and populate the table when the page loads
+        window.onload = fetchRaceData;
+
+        // Add event listener for filtering
+        document.getElementById('filterInput').addEventListener('input', filterTable);
+    </script>
+</body>
+</html>
