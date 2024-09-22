@@ -2,6 +2,8 @@ branch-defaults:
   default:
     environment: lap-times-tracker-env
     group_suffix: null
+  main:
+    environment: lap-times-tracker-env
 global:
   application_name: rc-laptimes-website
   branch: null
