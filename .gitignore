@@ -90,5 +90,12 @@ typings/
 *_lambda.zip
 .terraform/terraform.tfstate
 .terraform/terraform.tfstate.backup
-.terraform/terraform.tfstate
-.terraform/terraform.tfstate.backup
+.terraform/.terraform/modules/modules.json
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/4.2.0/darwin_arm64/terraform-provider-aws_v4.2.0_x5
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/5.68.0/darwin_arm64/LICENSE.txt
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/5.68.0/darwin_arm64/terraform-provider-aws_v5.68.0_x5
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/local/2.5.2/darwin_arm64/LICENSE.txt
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/local/2.5.2/darwin_arm64/terraform-provider-local_v2.5.2_x5
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/null/3.2.3/darwin_arm64/LICENSE.txt
+.terraform/.terraform/providers/registry.terraform.io/hashicorp/null/3.2.3/darwin_arm64/terraform-provider-null_v3.2.3_x5
+.terraform/.terraform.lock.hcl
