@@ -83,3 +83,12 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+.env.aws
+.env.localstack
+
+# Lambda zip files
+*_lambda.zip
+.terraform/terraform.tfstate
+.terraform/terraform.tfstate.backup
+.terraform/terraform.tfstate
+.terraform/terraform.tfstate.backup

@@ -1,42 +1,89 @@
-const express = require('express');
-const path = require('path');
-const uploadRoutes = require('./routes/uploadRoutes');
-const fs = require('fs').promises;
-const app = express();
+const { DynamoDBClient, ScanCommand } = require("@aws-sdk/client-dynamodb");
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
+const region = process.env.AWS_REGION || "ap-southeast-2";
+const dynamodbClient = new DynamoDBClient({ region });
 
-// Use upload routes
-app.use('/upload', uploadRoutes);
+exports.lambdaHandler = async (event, context) => {
+	console.log('Received event:', JSON.stringify(event, null, 2));
 
-// Route for the home page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+	try {
+		const httpMethod = event.httpMethod;
 
-// API endpoint to get race data
-app.get('/api/racedata', async (req, res) => {
-  try {
-    const dataDir = path.join(__dirname, 'data');
-    const files = await fs.readdir(dataDir);
-    const jsonFiles = files.filter(file => path.extname(file).toLowerCase() === '.json');
+		if (httpMethod === 'GET') {
+			// Handle GET request (retrieve data from DynamoDB)
+			const params = {
+				TableName: process.env.DYNAMODB_TABLE_NAME,
+			};
 
-    const allRaceData = await Promise.all(jsonFiles.map(async (file) => {
-      const filePath = path.join(dataDir, file);
-      const fileContent = await fs.readFile(filePath, 'utf8');
-      return JSON.parse(fileContent);
-    }));
+			const command = new ScanCommand(params);
+			const scanResponse = await dynamodbClient.send(command);
 
-    res.json(allRaceData);
-  } catch (error) {
-    console.error('Error reading race data:', error);
-    res.status(500).json({ error: 'Unable to retrieve race data' });
-  }
-});
+			const items = scanResponse.Items.map(item => unmarshall(item));
 
-// Start the server
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+			const response = {
+				statusCode: 200,
+				headers: {
+					"Access-Control-Allow-Origin": `http://${process.env.WEBSITE_ENDPOINT}`,
+					"Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+					"Access-Control-Allow-Methods": "GET,OPTIONS,POST"
+				},
+				body: JSON.stringify(items)
+			};
+
+			return response;
+
+		} else if (httpMethod === 'POST') {
+			// Handle POST request (file upload)
+			// This part remains unchanged as it's still uploading to S3
+			const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+			const s3Client = new S3Client({ region });
+
+			const body = JSON.parse(event.body);
+			const fileName = body.fileName;
+			const fileContent = Buffer.from(body.fileContent, 'base64');
+
+			const putParams = {
+				Bucket: process.env.S3_BUCKET_NAME,
+				Key: fileName,
+				Body: fileContent,
+				ContentType: 'application/json'
+			};
+			const putCommand = new PutObjectCommand(putParams);
+			await s3Client.send(putCommand);
+
+			return {
+				statusCode: 200,
+				headers: {
+					"Access-Control-Allow-Origin": `http://${process.env.WEBSITE_ENDPOINT}`,
+					"Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+					"Access-Control-Allow-Methods": "OPTIONS,POST"
+				},
+				body: JSON.stringify({ message: 'File uploaded successfully' })
+			};
+
+		} else {
+			// Handle unsupported HTTP methods
+			return {
+				statusCode: 405,
+				headers: {
+					"Access-Control-Allow-Origin": `http://${process.env.WEBSITE_ENDPOINT}`,
+					"Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+					"Access-Control-Allow-Methods": "OPTIONS,POST"
+				},
+				body: JSON.stringify({ error: 'Method not allowed' })
+			};
+		}
+	} catch (error) {
+		console.error('Error:', error);
+		return {
+			statusCode: 500,
+			headers: {
+				"Access-Control-Allow-Origin": `http://${process.env.WEBSITE_ENDPOINT}`,
+				"Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+				"Access-Control-Allow-Methods": "OPTIONS,POST"
+			},
+			body: JSON.stringify({ error: 'Internal server error' })
+		};
+	}
+};
