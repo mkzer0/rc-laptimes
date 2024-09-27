@@ -72,6 +72,25 @@
             </div>
         </div>
 
+        <!-- Add this after the filters and before the chart -->
+        <div class="row mb-3">
+            <div class="col">
+                <h4>Leaderboard</h4>
+                <table id="leaderboardTable" class="table table-sm table-dark">
+                    <thead>
+                        <tr>
+                            <th>Track</th>
+                            <th>Driver</th>
+                            <th>Track Record</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- This will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Chart -->
         <div class="mb-4">
             <canvas id="lapTimeChart"></canvas>
@@ -112,6 +131,7 @@
                 }
                 allRaceData = await response.json();
                 populateFilters();
+                updateLeaderboard(''); // Initialize leaderboard with all tracks
                 updateTableAndChart();
             } catch (error) {
                 console.error('Error fetching race data:', error);
@@ -175,6 +195,7 @@
                 populateTable(filteredData);
             }
             updateChart();
+            // We're not calling updateLeaderboard here anymore
         }
 
         function populateTable(raceData) {
@@ -198,6 +219,7 @@
 
         const trackShapes = ['circle', 'triangle', 'rect', 'star', 'cross'];
         let trackShapeMap = {};
+        let driverColorMap = {};
 
         function updateChart() {
             const tableBody = document.getElementById('lapTableBody');
@@ -219,32 +241,41 @@
                 return;
             }
 
-            // Group data by track
-            const trackData = {};
+            // Group data by track and driver
+            const chartData = {};
             Array.from(rows).forEach(row => {
                 const track = row.cells[1].textContent;
+                const driver = row.cells[3].textContent;
                 const dateStr = row.cells[6].textContent;
                 const lapTime = parseInt(row.cells[5].textContent, 10);
                 
-                if (!trackData[track]) {
-                    trackData[track] = [];
+                if (!chartData[track]) {
+                    chartData[track] = {};
                     if (!trackShapeMap[track]) {
                         trackShapeMap[track] = trackShapes[Object.keys(trackShapeMap).length % trackShapes.length];
                     }
                 }
+                if (!chartData[track][driver]) {
+                    chartData[track][driver] = [];
+                    if (!driverColorMap[driver]) {
+                        driverColorMap[driver] = `hsl(${Object.keys(driverColorMap).length * 137.508 % 360}, 70%, 50%)`;
+                    }
+                }
                 
-                trackData[track].push({
+                chartData[track][driver].push({
                     x: moment(dateStr, 'DD/MM/YYYY, HH:mm:ss').toDate(),
                     y: lapTime
                 });
             });
 
-            const datasets = Object.keys(trackData).map(track => ({
-                label: track,
-                data: trackData[track],
-                backgroundColor: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                pointStyle: trackShapeMap[track]
-            }));
+            const datasets = Object.entries(chartData).flatMap(([track, drivers]) =>
+                Object.entries(drivers).map(([driver, data]) => ({
+                    label: `${track} - ${driver}`,
+                    data: data,
+                    backgroundColor: driverColorMap[driver],
+                    pointStyle: trackShapeMap[track]
+                }))
+            );
 
             chart = new Chart(ctx, {
                 type: 'scatter',
@@ -291,6 +322,35 @@
             });
 
             console.log('Chart created:', chart);
+        }
+
+        function updateLeaderboard(trackFilter) {
+            const leaderboard = {};
+            
+            allRaceData.forEach(lap => {
+                if (!trackFilter || lap.RaceLocation === trackFilter) {
+                    if (!leaderboard[lap.RaceLocation] || lap.LapTime < leaderboard[lap.RaceLocation].time) {
+                        leaderboard[lap.RaceLocation] = {
+                            driver: lap.DriverName,
+                            time: lap.LapTime
+                        };
+                    }
+                }
+            });
+
+            const leaderboardBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
+            leaderboardBody.innerHTML = '';
+            Object.entries(leaderboard).forEach(([track, record]) => {
+                const row = leaderboardBody.insertRow();
+                row.insertCell(0).textContent = track;
+                row.insertCell(1).textContent = record.driver;
+                row.insertCell(2).textContent = `${record.time}ms`;
+            });
+        }
+
+        function clearLeaderboard() {
+            const leaderboardBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
+            leaderboardBody.innerHTML = '';
         }
 
         function filterTable() {
@@ -362,7 +422,11 @@
             filterTable();
             updateChart();
         });
-        document.getElementById('trackFilter').addEventListener('change', debouncedUpdateTableAndChart);
+        document.getElementById('trackFilter').addEventListener('change', () => {
+            const trackFilter = document.getElementById('trackFilter').value;
+            updateLeaderboard(trackFilter);
+            debouncedUpdateTableAndChart();
+        });
         document.getElementById('dayFilter').addEventListener('change', debouncedUpdateTableAndChart);
         document.getElementById('driverFilter').addEventListener('change', debouncedUpdateTableAndChart);
 
