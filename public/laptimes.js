@@ -204,7 +204,10 @@
             label: `${driver} - ${track}`,
             data: filteredData
               .filter(lap => lap.DriverName === driver && lap.TrackName === track)
-              .map(lap => ({ x: new Date(lap.LapDateTime), y: lap.LapTime / 100 })),
+              .map(lap => ({
+                x: new Date(lap.LapDateTime).getTime(), // Convert to timestamp
+                y: lap.LapTime / 100
+              })),
             backgroundColor: getColor(driverIndex),
             pointStyle: getShape(trackIndex),
             pointRadius: 5,
@@ -224,12 +227,20 @@
             time: {
               unit: 'day',
               displayFormats: {
-                day: 'MMM D'
+                day: 'MMM D, YYYY'
               }
             },
             title: {
               display: true,
               text: 'Date'
+            },
+            ticks: {
+              source: 'data',
+              autoSkip: true,
+              maxTicksLimit: 10,
+              callback: function(value, index, values) {
+                return new Date(value).toLocaleDateString();
+              }
             }
           },
           y: {
@@ -254,7 +265,7 @@
           tooltip: {
             callbacks: {
               title: function(context) {
-                return moment(context[0].parsed.x).format('MMMM D, YYYY, HH:mm:ss');
+                return new Date(context[0].parsed.x).toLocaleString();
               },
               label: function(context) {
                 return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} seconds`;
