@@ -8,24 +8,138 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body, html {
+            height: 100%;
+        }
+        .card {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #leaderboardTable {
+            margin-bottom: 0;
+        }
+        .navbar {
+            overflow-y: auto;
+        }
+        #lapTable th {
+            position: relative;
+        }
+        #lapTable th.sorted-asc::after {
+            content: ' ▲';
+            position: absolute;
+            right: 5px;
+        }
+        #lapTable th.sorted-desc::after {
+            content: ' ▼';
+            position: absolute;
+            right: 5px;
+        }
+    </style>
 </head>
 <body>
-    <!-- Navbar with hamburger menu on the left -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <a class="navbar-brand ms-2" href="#">Lap Times Tracker</a>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto"> <!-- Aligns the menu to the right -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">Upload</a>
-                    </li>
-                </ul>
+    <div class="d-flex">
+        <!-- Left-aligned navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column align-items-start" style="width: 250px; height: 100vh; position: fixed;">
+            <div class="container-fluid flex-column align-items-start">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse flex-column align-items-start w-100" id="navbarNav">
+                    <ul class="navbar-nav flex-column w-100">
+                        <li class="nav-item w-100">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="fas fa-upload me-2"></i>Upload
+                            </a>
+                        </li>
+                        <li class="nav-item w-100">
+                            <a class="nav-link" href="#">
+                                <i class="fas fa-road me-2"></i>Tracks
+                            </a>
+                        </li>
+                        <li class="nav-item w-100">
+                            <a class="nav-link" href="#">
+                                <i class="fas fa-cog me-2"></i>Admin
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main content area -->
+        <div class="container-fluid" style="margin-left: 250px; padding-top: 20px;">
+            <h1>Lap Times Dashboard</h1>
+            
+            <!-- Leaderboard -->
+            <div class="row mb-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            <h4 class="mb-0">Leaderboard</h4>
+                        </div>
+                        <div class="card-body">
+                            <table id="leaderboardTable" class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Track</th>
+                                        <th>Driver</th>
+                                        <th>Track Record</th>
+                                        <th>Date Set</th>
+                                        <th>Record Age</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- This will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <select id="trackFilter" class="form-select">
+                        <option value="">All Tracks</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="date" id="dayFilter" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <select id="driverFilter" class="form-select">
+                        <option value="">All Drivers</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="mb-4">
+                <canvas id="lapTimeChart"></canvas>
+            </div>
+
+            <!-- Table -->
+            <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter by driver, race name, or location...">
+            <div class="table-responsive">
+                <table id="lapTable" class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Track Name</th>
+                            <th>Driver Name</th>
+                            <th>Lap Number</th>
+                            <th>Lap Time</th>
+                            <th>Lap Date/Time</th>
+                            <th>Race Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lapTableBody">
+                    </tbody>
+                </table>
             </div>
         </div>
-    </nav>
+    </div>
 
     <!-- Modal for Upload -->
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
@@ -41,442 +155,39 @@
                             <label for="fileInput" class="form-label">Select JSON file</label>
                             <input type="file" class="form-control" id="fileInput" name="file" accept=".json" required>
                         </div>
+                        <div class="mb-3">
+                            <label for="trackName" class="form-label">Track Name</label>
+                            <input type="text" class="form-control" id="trackName" name="trackName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
                         <div id="uploadStatus" class="mt-3"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary" id="uploadButton">Upload</button>
+                        </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="uploadButton">Upload</button>
-                </div>
             </div>
-        </div>
-    </div>
-
-    <div class="container mt-4">
-        <h1>Lap Times Dashboard</h1>
-        
-        <!-- Filters -->
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <select id="trackFilter" class="form-select">
-                    <option value="">All Tracks</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <input type="date" id="dayFilter" class="form-control">
-            </div>
-            <div class="col-md-4">
-                <select id="driverFilter" class="form-select">
-                    <option value="">All Drivers</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Add this after the filters and before the chart -->
-        <div class="row mb-3">
-            <div class="col">
-                <h4>Leaderboard</h4>
-                <table id="leaderboardTable" class="table table-sm table-dark">
-                    <thead>
-                        <tr>
-                            <th>Track</th>
-                            <th>Driver</th>
-                            <th>Track Record</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- This will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Chart -->
-        <div class="mb-4">
-            <canvas id="lapTimeChart"></canvas>
-        </div>
-
-        <!-- Table -->
-        <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter by driver, race name, or location...">
-        <div class="table-responsive">
-            <table id="lapTable" class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th onclick="sortTable(0)">Race Name</th>
-                        <th onclick="sortTable(1)">Race Location</th>
-                        <th onclick="sortTable(2)">Race Notes</th>
-                        <th onclick="sortTable(3)">Driver Name</th>
-                        <th onclick="sortTable(4)">Lap Number</th>
-                        <th onclick="sortTable(5)">Lap Time</th>
-                        <th onclick="sortTable(6)">Lap Date/Time</th>
-                    </tr>
-                </thead>
-                <tbody id="lapTableBody">
-                </tbody>
-            </table>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Our custom JavaScript -->
+    <script src="laptimes.js"></script>
     <script>
-        let allRaceData = [];
-        let chart;
-
-        async function fetchRaceData() {
-            try {
-                const response = await fetch(`${window.API_GATEWAY_URL}/api/data`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                allRaceData = await response.json();
-                populateFilters();
-                updateLeaderboard(''); // Initialize leaderboard with all tracks
-                updateTableAndChart();
-            } catch (error) {
-                console.error('Error fetching race data:', error);
-            }
+      // Use an IIFE to ensure initializeLapTimesTracker is only called once
+      (function() {
+        if (typeof initializeLapTimesTracker === 'function') {
+          initializeLapTimesTracker().catch(error => console.error('Error initializing LapTimesTracker:', error));
+        } else {
+          console.error('initializeLapTimesTracker is not defined');
         }
-
-        function populateFilters() {
-            const trackFilter = document.getElementById('trackFilter');
-            const driverFilter = document.getElementById('driverFilter');
-            const dayFilter = document.getElementById('dayFilter');
-            const tracks = new Set();
-            const drivers = new Set();
-            const days = new Set();
-
-            allRaceData.forEach(lap => {
-                tracks.add(lap.RaceLocation);
-                drivers.add(lap.DriverName);
-                days.add(moment(lap.LapDateTime).format('YYYY-MM-DD'));
-            });
-
-            trackFilter.innerHTML = '<option value="">All Tracks</option>';
-            driverFilter.innerHTML = '<option value="">All Drivers</option>';
-            dayFilter.innerHTML = '<option value="">All Days</option>';
-
-            tracks.forEach(track => {
-                const option = document.createElement('option');
-                option.value = track;
-                option.textContent = track;
-                trackFilter.appendChild(option);
-            });
-
-            drivers.forEach(driver => {
-                const option = document.createElement('option');
-                option.value = driver;
-                option.textContent = driver;
-                driverFilter.appendChild(option);
-            });
-
-            days.forEach(day => {
-                const option = document.createElement('option');
-                option.value = day;
-                option.textContent = day;
-                dayFilter.appendChild(option);
-            });
-        }
-
-        function updateTableAndChart() {
-            const trackFilter = document.getElementById('trackFilter').value;
-            const dayFilter = document.getElementById('dayFilter').value;
-            const driverFilter = document.getElementById('driverFilter').value;
-
-            const filteredData = allRaceData.filter(lap => {
-                return (!trackFilter || lap.RaceLocation === trackFilter) &&
-                       (!dayFilter || moment(lap.LapDateTime).format('YYYY-MM-DD') === dayFilter) &&
-                       (!driverFilter || lap.DriverName === driverFilter);
-            });
-
-            if (filteredData.length === 0) {
-                document.getElementById('lapTableBody').innerHTML = '<tr><td colspan="7">No data matches the selected filters</td></tr>';
-            } else {
-                populateTable(filteredData);
-            }
-            updateChart();
-            // We're not calling updateLeaderboard here anymore
-        }
-
-        function populateTable(raceData) {
-            const tableBody = document.getElementById('lapTableBody');
-            tableBody.innerHTML = '';
-
-            raceData.forEach((lap) => {
-                const row = tableBody.insertRow();
-                row.insertCell(0).textContent = lap.RaceName;
-                row.insertCell(1).textContent = lap.RaceLocation;
-                row.insertCell(2).textContent = lap.RaceNotes;
-                row.insertCell(3).textContent = lap.DriverName;
-                row.insertCell(4).textContent = lap.LapNumber;
-                row.insertCell(5).textContent = lap.LapTime;
-                row.insertCell(6).textContent = moment(lap.LapDateTime).format('DD/MM/YYYY, HH:mm:ss');
-            });
-
-            console.log('Table populated with', raceData.length, 'rows');
-            updateChart();
-        }
-
-        const trackShapes = ['circle', 'triangle', 'rect', 'star', 'cross'];
-        let trackShapeMap = {};
-        let driverColorMap = {};
-
-        function updateChart() {
-            const tableBody = document.getElementById('lapTableBody');
-            const rows = tableBody.getElementsByTagName('tr');
-            
-            // Destroy the existing chart if it exists
-            if (chart) {
-                chart.destroy();
-            }
-
-            const ctx = document.getElementById('lapTimeChart').getContext('2d');
-
-            // Clear the canvas
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-            // If there's no data or only one row with "No data matches..." message, return
-            if (rows.length === 0 || (rows.length === 1 && rows[0].cells.length === 1)) {
-                console.warn('No data to display in the chart');
-                return;
-            }
-
-            // Group data by track and driver
-            const chartData = {};
-            Array.from(rows).forEach(row => {
-                const track = row.cells[1].textContent;
-                const driver = row.cells[3].textContent;
-                const dateStr = row.cells[6].textContent;
-                const lapTime = parseInt(row.cells[5].textContent, 10);
-                
-                if (!chartData[track]) {
-                    chartData[track] = {};
-                    if (!trackShapeMap[track]) {
-                        trackShapeMap[track] = trackShapes[Object.keys(trackShapeMap).length % trackShapes.length];
-                    }
-                }
-                if (!chartData[track][driver]) {
-                    chartData[track][driver] = [];
-                    if (!driverColorMap[driver]) {
-                        driverColorMap[driver] = `hsl(${Object.keys(driverColorMap).length * 137.508 % 360}, 70%, 50%)`;
-                    }
-                }
-                
-                chartData[track][driver].push({
-                    x: moment(dateStr, 'DD/MM/YYYY, HH:mm:ss').toDate(),
-                    y: lapTime
-                });
-            });
-
-            const datasets = Object.entries(chartData).flatMap(([track, drivers]) =>
-                Object.entries(drivers).map(([driver, data]) => ({
-                    label: `${track} - ${driver}`,
-                    data: data,
-                    backgroundColor: driverColorMap[driver],
-                    pointStyle: trackShapeMap[track]
-                }))
-            );
-
-            chart = new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                displayFormats: {
-                                    minute: 'MMM D, HH:mm'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Date/Time'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Lap Time (ms)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const point = context.raw;
-                                    return `${context.dataset.label}: ${point.y}ms at ${moment(point.x).format('DD/MM/YYYY, HH:mm:ss')}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            console.log('Chart created:', chart);
-        }
-
-        function updateLeaderboard(trackFilter) {
-            const leaderboard = {};
-            
-            allRaceData.forEach(lap => {
-                if (!trackFilter || lap.RaceLocation === trackFilter) {
-                    if (!leaderboard[lap.RaceLocation] || lap.LapTime < leaderboard[lap.RaceLocation].time) {
-                        leaderboard[lap.RaceLocation] = {
-                            driver: lap.DriverName,
-                            time: lap.LapTime
-                        };
-                    }
-                }
-            });
-
-            const leaderboardBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
-            leaderboardBody.innerHTML = '';
-            Object.entries(leaderboard).forEach(([track, record]) => {
-                const row = leaderboardBody.insertRow();
-                row.insertCell(0).textContent = track;
-                row.insertCell(1).textContent = record.driver;
-                row.insertCell(2).textContent = `${record.time}ms`;
-            });
-        }
-
-        function clearLeaderboard() {
-            const leaderboardBody = document.getElementById('leaderboardTable').getElementsByTagName('tbody')[0];
-            leaderboardBody.innerHTML = '';
-        }
-
-        function filterTable() {
-            const filterValue = document.getElementById('filterInput').value.toLowerCase();
-            const filteredData = allRaceData.filter(lap => {
-                return lap.DriverName.toLowerCase().includes(filterValue) ||
-                       lap.RaceName.toLowerCase().includes(filterValue) ||
-                       lap.RaceLocation.toLowerCase().includes(filterValue);
-            });
-            populateTable(filteredData);
-        }
-
-        function sortTable(n) {
-            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-            table = document.getElementById("lapTable");
-            switching = true;
-            dir = "asc";
-            
-            while (switching) {
-                switching = false;
-                rows = table.rows;
-                
-                for (i = 1; i < (rows.length - 1); i++) {
-                    shouldSwitch = false;
-                    x = rows[i].getElementsByTagName("TD")[n];
-                    y = rows[i + 1].getElementsByTagName("TD")[n];
-                    
-                    if (dir == "asc") {
-                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    } else if (dir == "desc") {
-                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    }
-                }
-                
-                if (shouldSwitch) {
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                    switchcount++;
-                } else {
-                    if (switchcount == 0 && dir == "asc") {
-                        dir = "desc";
-                        switching = true;
-                    }
-                }
-            }
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        const debouncedUpdateTableAndChart = debounce(updateTableAndChart, 250);
-
-        document.getElementById('filterInput').addEventListener('input', () => {
-            filterTable();
-            updateChart();
-        });
-        document.getElementById('trackFilter').addEventListener('change', () => {
-            const trackFilter = document.getElementById('trackFilter').value;
-            updateLeaderboard(trackFilter);
-            debouncedUpdateTableAndChart();
-        });
-        document.getElementById('dayFilter').addEventListener('change', debouncedUpdateTableAndChart);
-        document.getElementById('driverFilter').addEventListener('change', debouncedUpdateTableAndChart);
-
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a file to upload');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const fileContent = e.target.result;
-                try {
-                    const response = await fetch(`${window.API_GATEWAY_URL}/api/data`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            fileName: file.name,
-                            fileContent: btoa(fileContent)
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    console.log('Upload result:', result);
-                    alert('File uploaded successfully');
-                    fetchRaceData();
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Error uploading file');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        fetch('config.json')
-            .then(response => response.json())
-            .then(config => {
-                window.API_GATEWAY_URL = config.API_GATEWAY_URL;
-                fetchRaceData();
-            })
-            .catch(error => console.error('Error loading config:', error));
+      })();
     </script>
 </body>
 </html>

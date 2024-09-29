@@ -1,70 +1,84 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
-const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-const { marshall } = require("@aws-sdk/util-dynamodb");
+const { S3Client, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-const region = process.env.AWS_REGION;
+const region = process.env.AWS_REGION || "ap-southeast-2";
 const dynamodbClient = new DynamoDBClient({ region });
 const s3Client = new S3Client({ region });
 
 exports.lambdaHandler = async (event, context) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
-
     try {
         const bucket = event.Records[0].s3.bucket.name;
         const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
-
-        // Extract race location and notes from filename
-        const fileNameWithoutExtension = key.split('/').pop().split('.')[0];
-        const [raceLocation, ...notesParts] = fileNameWithoutExtension.split('-');
-        const raceNotes = notesParts.join('-');
 
         // Get the object from S3
         const getObjectParams = { Bucket: bucket, Key: key };
         const { Body } = await s3Client.send(new GetObjectCommand(getObjectParams));
         const fileContent = await Body.transformToString();
-        const jsonData = JSON.parse(fileContent);
+        const raceData = JSON.parse(fileContent);
 
-        for (const document of jsonData) {
-            for (const race of document.races) {
-                const raceId = race.uuid;
-                const raceName = race.name;
-                const raceStartTime = new Date(race.date).getTime();
+        // Check if trackName is present
+        if (!raceData.trackName) {
+            throw new Error('TrackName is missing');
+        }
 
-                for (const driver of race.drivers) {
-                    const driverName = driver.name;
+        const trackName = raceData.trackName;
+        const notes = raceData.notes || '';
+        const races = raceData.data.races;
 
-                    for (let i = 0; i < driver.laps.length; i++) {
-                        const lap = driver.laps[i];
-                        if (lap.kind === 'normal') {
-                            const lapTimestamp = raceStartTime + lap.endTimestamp;
-                            const item = {
-                                'RaceId': raceId,
-                                'LapTimestamp': lapTimestamp,
-                                'RaceName': raceName,
-                                'RaceLocation': raceLocation,
-                                'RaceNotes': raceNotes,
-                                'DriverName': driverName,
-                                'LapNumber': i,
-                                'LapTime': lap.duration,
-                                'LapDateTime': new Date(lapTimestamp).toISOString()
-                            };
+        for (const race of races) {
+            const raceId = race.uuid;
+            const raceName = race.name;
+            const raceStartTime = new Date(race.date).getTime();
 
-                            const params = {
-                                TableName: process.env.DYNAMODB_TABLE_NAME,
-                                Item: marshall(item)
-                            };
+            for (const driver of race.drivers) {
+                const driverName = driver.name;
 
-                            await dynamodbClient.send(new PutItemCommand(params));
-                        }
+                for (let i = 0; i < driver.laps.length; i++) {
+                    const lap = driver.laps[i];
+                    if (lap.kind === 'normal') {
+                        const lapTimestamp = raceStartTime + lap.endTimestamp;
+                        const item = {
+                            'RaceId': { S: raceId },
+                            'LapTimestamp': { N: lapTimestamp.toString() },
+                            'RaceName': { S: raceName },
+                            'TrackName': { S: trackName },
+                            'RaceNotes': { S: notes },
+                            'DriverName': { S: driverName },
+                            'LapNumber': { N: i.toString() },
+                            'LapTime': { N: lap.duration.toString() },
+                            'LapDateTime': { S: new Date(lapTimestamp).toISOString() }
+                        };
+
+                        const params = {
+                            TableName: process.env.DYNAMODB_TABLE_NAME,
+                            Item: item
+                        };
+
+                        await dynamodbClient.send(new PutItemCommand(params));
+                        //console.log('Inserted item:', JSON.stringify(item, null, 2));
                     }
                 }
             }
         }
 
-        console.log('Data processed and stored successfully');
-        return { statusCode: 200, body: JSON.stringify('Data processed successfully') };
+        // Rename the file by adding 'completed' suffix
+        const newKey = `${key.split('.').slice(0, -1).join('.')}-completed.json`;
+        
+        await s3Client.send(new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: `${bucket}/${key}`,
+            Key: newKey
+        }));
+
+        await s3Client.send(new DeleteObjectCommand({
+            Bucket: bucket,
+            Key: key
+        }));
+
+        //console.log('Data processed and stored successfully. File renamed to:', newKey);
+        return { statusCode: 200, body: JSON.stringify('Data processed successfully and file renamed') };
     } catch (error) {
         console.error('Error:', error);
-        return { statusCode: 500, body: JSON.stringify('Error processing data') };
+        return { statusCode: 500, body: JSON.stringify('Error processing data: ' + error.message) };
     }
 };

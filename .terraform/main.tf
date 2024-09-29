@@ -66,7 +66,9 @@ resource "aws_s3_bucket_policy" "public_read" {
           "${aws_s3_bucket.public_bucket.arn}/*.html",
           "${aws_s3_bucket.public_bucket.arn}/*.jpg",
           "${aws_s3_bucket.public_bucket.arn}/*.jpeg",
-          "${aws_s3_bucket.public_bucket.arn}/*.json"
+          "${aws_s3_bucket.public_bucket.arn}/*.json",
+          "${aws_s3_bucket.public_bucket.arn}/*.js",
+          "${aws_s3_bucket.public_bucket.arn}/*.ico"
         ]
       },
     ]
@@ -85,6 +87,15 @@ resource "aws_s3_object" "object_upload_html" {
   etag         = filemd5("${var.website_content_path}/${each.value}")
 }
 
+resource "aws_s3_object" "object_upload_js" {
+  for_each     = fileset("${var.website_content_path}", "*.js")
+  bucket       = aws_s3_bucket.public_bucket.bucket
+  key          = each.value
+  source       = "${var.website_content_path}/${each.value}"
+  content_type = "application/javascript"
+  etag         = filemd5("${var.website_content_path}/${each.value}")
+}
+
 # Upload JPEG files to S3
 resource "aws_s3_object" "object_upload_jpg" {
   for_each     = fileset("${var.website_content_path}", "*.{jpg,jpeg}")
@@ -92,6 +103,15 @@ resource "aws_s3_object" "object_upload_jpg" {
   key          = each.value
   source       = "${var.website_content_path}/${each.value}"
   content_type = "image/jpeg"
+  etag         = filemd5("${var.website_content_path}/${each.value}")
+}
+
+resource "aws_s3_object" "object_upload_ico" {
+  for_each     = fileset("${var.website_content_path}", "*.{ico}")
+  bucket       = aws_s3_bucket.public_bucket.bucket
+  key          = each.value
+  source       = "${var.website_content_path}/${each.value}"
+  content_type = "image/x-icon"
   etag         = filemd5("${var.website_content_path}/${each.value}")
 }
 
