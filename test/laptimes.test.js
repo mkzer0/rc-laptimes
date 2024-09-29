@@ -8,17 +8,28 @@ global.fetch = jest.fn(() =>
   })
 );
 
-// Mock the Chart.js library
+// Mock D3.js
+const mockD3 = {
+  scaleOrdinal: jest.fn(() => jest.fn(x => x)),
+  schemeCategory10: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+};
+
+jest.mock('d3', () => mockD3);
+
+// Mock Chart.js
+const mockChartInstance = {
+  destroy: jest.fn(),
+  update: jest.fn(),
+};
+
+const MockChart = jest.fn(() => mockChartInstance);
+
 jest.mock('chart.js', () => ({
-  Chart: jest.fn().mockImplementation(() => ({
-    destroy: jest.fn(),
-  })),
+  Chart: MockChart,
 }));
 
-// In your test file, before using LapTimesTracker
-global.Chart = jest.fn().mockImplementation(() => ({
-  destroy: jest.fn(),
-}));
+// Import your module after mocking
+const laptimes = require('../public/laptimes');
 
 describe('LapTimesTracker', () => {
   let tracker;
@@ -45,7 +56,10 @@ describe('LapTimesTracker', () => {
     `;
 
     mockConfig = { API_GATEWAY_URL: 'http://mock-api.com' };
-    tracker = new LapTimesTracker(mockConfig);
+    tracker = new laptimes.LapTimesTracker(mockConfig);
+
+    // Ensure the mocked d3 is used
+    tracker.d3 = mockD3;
 
     // Mock the window object
     global.window = Object.create(window);
@@ -64,6 +78,9 @@ describe('LapTimesTracker', () => {
         })
       }
     };
+
+    // Make sure Chart is available globally
+    global.Chart = MockChart;
   });
 
   test('constructor initializes with correct properties', () => {
@@ -121,6 +138,11 @@ describe('LapTimesTracker', () => {
     const lapTableBody = document.getElementById('lapTableBody');
     expect(lapTableBody.children.length).toBe(1);
     expect(tracker.chart).not.toBeNull();
+    expect(MockChart).toHaveBeenCalled();
+
+    // Add expectations for D3.js calls
+    expect(mockD3.scaleOrdinal).toHaveBeenCalledWith(mockD3.schemeCategory10);
+    expect(mockD3.scaleOrdinal).toHaveBeenCalledWith(['circle', 'triangle', 'square', 'diamond', 'star']);
   });
 
   test('handleFileUpload shows alert when file or track name is missing', async () => {
@@ -228,6 +250,9 @@ describe('Table Sorting', () => {
       <select id="trackFilter"></select>
       <input id="dayFilter" type="date">
       <select id="driverFilter"></select>
+      <div id="chartPanel"></div>
+      <div id="tablePanel"></div>
+      <input type="checkbox" id="viewSwitch">
       <table id="lapTable">
         <thead>
           <tr>
@@ -244,7 +269,7 @@ describe('Table Sorting', () => {
     `;
 
     mockTable = document.getElementById('lapTable');
-    tracker = new LapTimesTracker({ API_GATEWAY_URL: 'http://test-api.com' });
+    tracker = new laptimes.LapTimesTracker({ API_GATEWAY_URL: 'http://test-api.com' });
     
     // Mock data
     const mockData = [

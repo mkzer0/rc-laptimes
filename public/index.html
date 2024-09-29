@@ -39,6 +39,90 @@
             margin-bottom: 3rem !important;
             height: 500px !important; /* Increase this value to make the chart taller */
         }
+        .rocker-switch {
+            position: relative;
+            display: inline-block;
+            width: 200px;
+            height: 40px;
+            margin: 10px;
+        }
+
+        .rocker-switch-input {
+            display: none;
+        }
+
+        .rocker-switch-label {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #2c3e50;
+            border-radius: 20px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .rocker-switch-left,
+        .rocker-switch-right {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            color: #fff;
+            text-align: center;
+            line-height: 40px;
+            transition: background-color 0.3s ease;
+        }
+
+        .rocker-switch-left {
+            left: 0;
+            background-color: #3498db;
+        }
+
+        .rocker-switch-right {
+            right: 0;
+            background-color: #34495e; /* Darker shade for inactive side */
+        }
+
+        .rocker-switch-input:checked + .rocker-switch-label .rocker-switch-left {
+            background-color: #34495e; /* Darker shade when inactive */
+        }
+
+        .rocker-switch-input:checked + .rocker-switch-label .rocker-switch-right {
+            background-color: #3498db;
+        }
+
+        .panels {
+            position: relative;
+            height: 500px; /* Adjust this value as needed */
+        }
+
+        .panels .panel {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto; /* Allow scrolling if content exceeds panel height */
+        }
+
+        .panels .panel.active {
+            display: block;
+        }
+
+        #tablePanel {
+            overflow: auto; /* Changed from hidden to auto to allow scrolling if needed */
+        }
+
+        #chartPanel {
+            overflow: hidden;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -119,29 +203,44 @@
                 </div>
             </div>
 
-            <!-- Chart -->
-            <div class="chart-container mb-5">
-                <canvas id="lapTimeChart"></canvas>
+            <!-- Rocker switch -->
+            <div class="rocker-switch mb-3">
+                <input type="checkbox" id="viewSwitch" class="rocker-switch-input">
+                <label for="viewSwitch" class="rocker-switch-label">
+                    <span class="rocker-switch-left">Chart</span>
+                    <span class="rocker-switch-right">Table</span>
+                </label>
             </div>
 
-            <!-- Table -->
-            <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter by driver, race name, or location...">
-            <div class="table-responsive">
-                <table id="lapTable" class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>Track Name</th>
-                            <th>Driver Name</th>
-                            <th>Lap Number</th>
-                            <th>Lap Time</th>
-                            <th>Lap Date/Time</th>
-                            <th>Race Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lapTableBody">
-                    </tbody>
-                </table>
+            <!-- Panels -->
+            <div class="panels">
+                <div id="chartPanel" class="panel active">
+                    <div class="chart-container">
+                        <canvas id="lapTimeChart"></canvas>
+                    </div>
+                </div>
+                <div id="tablePanel" class="panel">
+                    <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filter by driver, race name, or location...">
+                    <div class="table-responsive">
+                        <table id="lapTable" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Track Name</th>
+                                    <th>Driver Name</th>
+                                    <th>Lap Number</th>
+                                    <th>Lap Time</th>
+                                    <th>Lap Date/Time</th>
+                                    <th>Race Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lapTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
+
+        
         </div>
     </div>
 
@@ -183,11 +282,12 @@
     
     <!-- Our custom JavaScript -->
     <script src="laptimes.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
       // Use an IIFE to ensure initializeLapTimesTracker is only called once
       (function() {
-        if (typeof initializeLapTimesTracker === 'function') {
-          initializeLapTimesTracker().catch(error => console.error('Error initializing LapTimesTracker:', error));
+        if (typeof window.initializeLapTimesTracker === 'function') {
+          window.initializeLapTimesTracker().catch(error => console.error('Error initializing LapTimesTracker:', error));
         } else {
           console.error('initializeLapTimesTracker is not defined');
         }
