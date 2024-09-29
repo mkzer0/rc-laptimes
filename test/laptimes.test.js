@@ -314,11 +314,17 @@ describe('Table Sorting', () => {
 
   // Cross-check: Verify sorting by comparing with a known sorted array
   test('sorts lap times correctly', () => {
-    tracker.sortTable(3);
+    const tbody = mockTable.querySelector('tbody');
+    tbody.innerHTML = `
+      <tr><td>Track A</td><td>Driver 1</td><td>1</td><td>1:02.96</td><td>2023-05-01T10:00:00Z</td><td>Note 1</td></tr>
+      <tr><td>Track B</td><td>Driver 2</td><td>2</td><td>0:59.99</td><td>2023-05-01T10:01:00Z</td><td>Note 2</td></tr>
+      <tr><td>Track C</td><td>Driver 3</td><td>3</td><td>1:00.01</td><td>2023-05-01T10:02:00Z</td><td>Note 3</td></tr>
+    `;
+
+    tracker.sortTable(3); // Sort by lap time
     const rows = mockTable.querySelectorAll('tbody tr');
-    const sortedLapTimes = ['6100', '6200', '6300'];
-    const actualLapTimes = Array.from(rows).map(row => row.cells[3].textContent);
-    expect(actualLapTimes).toEqual(sortedLapTimes);
+    const sortedLapTimes = Array.from(rows).map(row => row.cells[3].textContent);
+    expect(sortedLapTimes).toEqual(['0:59.99', '1:00.01', '1:02.96']);
   });
 
   // Error conditions: Test with invalid column index

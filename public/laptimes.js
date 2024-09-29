@@ -195,6 +195,7 @@ class LapTimesTracker {
   getLapChartOptions() {
     return {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: {
           type: 'time',
@@ -206,13 +207,18 @@ class LapTimesTracker {
           },
           title: {
             display: true,
-            text: 'Date'
+            text: 'Date',
+            padding: {top: 10, bottom: 30} // Add more padding below the axis title
           },
           ticks: {
-            source: 'auto',
+            maxRotation: 45, // Allow labels to rotate for better fit
+            minRotation: 45, // Ensure all labels are rotated
             autoSkip: true,
-            maxTicksLimit: 10,
-            color: 'rgb(255, 255, 255)'  // Set the color to white for visibility
+            maxTicksLimit: 20, // Increase this to show more labels
+            padding: 10 // Add padding to the ticks
+          },
+          grid: {
+            drawOnChartArea: false
           }
         },
         y: {
@@ -222,31 +228,23 @@ class LapTimesTracker {
           },
           ticks: {
             callback: function(value) {
-              return value.toFixed(2);  // Display with 2 decimal places
-            },
-            color: 'rgb(255, 255, 255)'
+              return value.toFixed(2);
+            }
           }
         }
       },
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || '';
-              if (label) {
-                label += ': ';
-              }
-              if (context.parsed.y !== null) {
-                label += context.parsed.y.toFixed(2) + ' seconds';
-              }
-              return label;
-            }
-          }
-        },
         legend: {
-          labels: {
-            color: 'rgb(255, 255, 255)'  // Set the color to white for visibility
-          }
+          position: 'top',
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+        }
+      },
+      layout: {
+        padding: {
+          bottom: 30 // Increase bottom padding
         }
       }
     };
@@ -399,15 +397,18 @@ class LapTimesTracker {
       return;  // Exit the function if the column index is invalid
     }
 
-    const isNumeric = columnIndex === 2 || columnIndex === 3; // Lap Number and Lap Time are numeric
-    const isDateTime = columnIndex === 4; // Lap Date/Time is a date
+    const isLapNumber = columnIndex === 2;
+    const isLapTime = columnIndex === 3;
+    const isDateTime = columnIndex === 4;
 
     rows.sort((a, b) => {
       let aValue = a.cells[columnIndex].textContent.trim();
       let bValue = b.cells[columnIndex].textContent.trim();
 
-      if (isNumeric) {
-        return parseFloat(aValue) - parseFloat(bValue);
+      if (isLapNumber) {
+        return parseInt(aValue) - parseInt(bValue);
+      } else if (isLapTime) {
+        return this.convertLapTimeToMilliseconds(aValue) - this.convertLapTimeToMilliseconds(bValue);
       } else if (isDateTime) {
         return new Date(aValue) - new Date(bValue);
       } else {
@@ -437,6 +438,12 @@ class LapTimesTracker {
         header.classList.remove('sorted-asc', 'sorted-desc');
       }
     });
+  }
+
+  convertLapTimeToMilliseconds(lapTime) {
+    const [minutes, secondsAndHundredths] = lapTime.split(':');
+    const [seconds, hundredths] = secondsAndHundredths.split('.');
+    return parseInt(minutes) * 60000 + parseInt(seconds) * 1000 + parseInt(hundredths) * 10;
   }
 }
 
