@@ -511,3 +511,8 @@
   window.initializeLapTimesTracker = initializeLapTimesTracker;
 
 })(window);
+
+// At the end of the file
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { LapTimesTracker };
+}
