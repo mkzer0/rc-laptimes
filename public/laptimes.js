@@ -281,6 +281,8 @@
         const element = document.getElementById(id);
         if (element) {
           element.addEventListener(event, handler.bind(this));
+        } else {
+          console.warn(`Element with id '${id}' not found`);
         }
       };
 
@@ -288,6 +290,9 @@
       addListenerIfExists('trackFilter', 'change', this.handleTrackFilterChange);
       addListenerIfExists('dayFilter', 'change', this.handleFilterChange);
       addListenerIfExists('driverFilter', 'change', this.handleFilterChange);
+
+      // Add event listener for the upload form
+      addListenerIfExists('uploadForm', 'submit', this.handleFileUpload);
 
       // Add event listeners for table headers
       const headers = document.querySelectorAll('#lapTable th');
@@ -299,6 +304,8 @@
       if (this.viewSwitch) {
         this.viewSwitch.addEventListener('change', this.handleViewSwitch.bind(this));
       }
+
+      console.log('Event listeners set up successfully');
     }
 
     handleFilterInput() {

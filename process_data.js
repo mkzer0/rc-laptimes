@@ -10,6 +10,12 @@ exports.lambdaHandler = async (event, context) => {
         const bucket = event.Records[0].s3.bucket.name;
         const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
 
+        // Check if the file has already been processed
+        if (key.endsWith('-completed.json')) {
+            console.log('File already processed, skipping:', key);
+            return { statusCode: 200, body: JSON.stringify('File already processed, skipping') };
+        }
+
         // Get the object from S3
         const getObjectParams = { Bucket: bucket, Key: key };
         const { Body } = await s3Client.send(new GetObjectCommand(getObjectParams));

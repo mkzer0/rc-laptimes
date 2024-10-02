@@ -186,4 +186,18 @@ describe('process_data Lambda function', () => {
     expect(JSON.parse(result.body)).toBe('Data processed successfully and file renamed');
     expect(endTime - startTime).toBeLessThan(5000); // Assuming it should process in less than 5 seconds
   });
+
+  // Add this test to the existing describe block
+  test('skips processing for files with -completed suffix', async () => {
+    const mockEvent = {
+      Records: [{ s3: { bucket: { name: 'test-bucket' }, object: { key: 'test-file-completed.json' } } }],
+    };
+
+    const result = await lambdaHandler(mockEvent);
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toBe('File already processed, skipping');
+    expect(S3Client.prototype.send).not.toHaveBeenCalled();
+    expect(DynamoDBClient.prototype.send).not.toHaveBeenCalled();
+  });
 });
