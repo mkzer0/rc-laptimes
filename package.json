@@ -9,7 +9,7 @@
     "build": "npm run build:process-data && npm run build:serve-data",
     "build:process-data": "zip -j process_data_lambda.zip process_data.js",
     "build:serve-data": "zip -j serve_data_lambda.zip app.js",
-    "test": "jest"
+    "test": "jest --config jest.config.js"
   },
   "keywords": [
     "lambda",
@@ -35,30 +35,8 @@
     "babel-jest": "^29.7.0",
     "d3": "^7.9.0",
     "jest": "^29.5.0",
-    "jest-environment-jsdom": "^29.5.0"
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.js"
-    ],
-    "transform": {
-      "^.+\\.jsx?$": "babel-jest"
-    },
-    "testMatch": [
-      "**/test/**/*.test.js"
-    ],
-    "collectCoverage": true,
-    "coverageDirectory": "coverage",
-    "coverageReporters": [
-      "text",
-      "lcov"
-    ],
-    "collectCoverageFrom": [
-      "public/**/*.js",
-      "*.js",
-      "!**/node_modules/**",
-      "!**/vendor/**"
-    ]
+    "jest-environment-jsdom": "^29.5.0",
+    "jsdom": "^25.0.1"
   }
+  
 }

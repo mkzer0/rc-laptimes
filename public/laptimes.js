@@ -11,6 +11,8 @@
       this.chartPanel = document.getElementById('chartPanel');
       this.tablePanel = document.getElementById('tablePanel');
       this.viewSwitch = document.getElementById('viewSwitch');
+      this.setupModalEventListeners();
+      this.setupEventListeners();
     }
 
     async initialize() {
@@ -19,7 +21,6 @@
       this.updateLeaderboard();
       this.destroyChart();  // Add this line
       this.updateTableAndChart();
-      this.setupEventListeners();
     }
 
     async fetchRaceData() {
@@ -281,8 +282,6 @@
         const element = document.getElementById(id);
         if (element) {
           element.addEventListener(event, handler.bind(this));
-        } else {
-          console.warn(`Element with id '${id}' not found`);
         }
       };
 
@@ -291,8 +290,10 @@
       addListenerIfExists('dayFilter', 'change', this.handleFilterChange);
       addListenerIfExists('driverFilter', 'change', this.handleFilterChange);
 
-      // Add event listener for the upload form
-      addListenerIfExists('uploadForm', 'submit', this.handleFileUpload);
+      const uploadForm = document.getElementById('uploadForm');
+      if (uploadForm) {
+        uploadForm.addEventListener('submit', this.handleFileUpload.bind(this));
+      }
 
       // Add event listeners for table headers
       const headers = document.querySelectorAll('#lapTable th');
@@ -304,8 +305,6 @@
       if (this.viewSwitch) {
         this.viewSwitch.addEventListener('change', this.handleViewSwitch.bind(this));
       }
-
-      console.log('Event listeners set up successfully');
     }
 
     handleFilterInput() {
@@ -336,47 +335,62 @@
 
     async handleFileUpload(e) {
       e.preventDefault();
-      const fileInput = document.getElementById('fileInput');
-      const trackName = document.getElementById('trackName').value;
-      const notes = document.getElementById('notes').value;
-      const file = fileInput.files[0];
-
-      if (!file || !trackName) {
-        alert(file ? 'Please enter a track name' : 'Please select a file to upload');
+      
+      const form = e.target || document.getElementById('uploadForm');
+      if (!form) {
+        console.error('Upload form not found');
         return;
       }
 
-      try {
-        const fileContent = await this.readFileContent(file);
-        const jsonData = JSON.parse(fileContent);
-        const raceData = { trackName, notes, data: jsonData };
+      const fileInput = form.querySelector('input[type="file"]');
+      const trackNameInput = form.querySelector('input[name="trackName"]');
+      const notesInput = form.querySelector('textarea[name="notes"]');
+      const uploadStatus = document.getElementById('uploadStatus');
+      const uploadButton = form.querySelector('button[type="submit"]');
 
-        const response = await this.uploadRaceData(file.name, raceData);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-
-        alert('File uploaded successfully');
-        this.resetUploadForm();
-        await this.fetchRaceData();
-        this.updateFilters();
-        this.updateLeaderboard();
-        this.updateTableAndChart();
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error uploading file: ' + error.message);
+      if (!fileInput || !trackNameInput) {
+        console.error('Required form elements not found');
+        return;
       }
-    }
 
-    readFileContent(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = event => reject(event.target?.error || event.error || new Error('File read failed'));
-        reader.readAsText(file);
-      });
+      if (!fileInput.files[0] || !trackNameInput.value) {
+        if (uploadStatus) uploadStatus.textContent = 'Please select a file and enter a track name.';
+        return;
+      }
+
+      const file = fileInput.files[0];
+
+      try {
+        uploadStatus.textContent = 'Uploading...';
+        uploadStatus.className = 'alert alert-info';
+        uploadButton.disabled = true;
+
+        // Read the file content
+        const fileContent = await this.readFileContent(file);
+        const raceData = JSON.parse(fileContent);
+
+        // Add track name and notes to the race data
+        raceData.trackName = trackNameInput.value;
+        raceData.notes = notesInput.value;
+
+        console.log('Uploading race data:', raceData);
+        const response = await this.uploadRaceData(file.name, raceData);
+
+        console.log('Upload response:', response);
+
+        uploadStatus.textContent = 'Upload successful! You can now close this window.';
+        uploadStatus.className = 'alert alert-success';
+        
+        // Refresh the data in the background
+        this.refreshData();
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        uploadStatus.textContent = 'Upload failed. Please try again.';
+        uploadStatus.className = 'alert alert-danger';
+      } finally {
+        uploadButton.disabled = false;
+      }
     }
 
     async uploadRaceData(fileName, raceData) {
@@ -388,12 +402,25 @@
           fileContent: btoa(JSON.stringify(raceData))
         }),
       });
+    }    
+
+    // Helper method to read file content
+    readFileContent(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file);
+      });
     }
 
-    resetUploadForm() {
-      document.getElementById('uploadForm').reset();
-      const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
-      modal.hide();
+    refreshData() {
+      // Refresh the data and update the UI
+      this.fetchRaceData().then(() => {
+        this.updateFilters();
+        this.updateLeaderboard();
+        this.updateTableAndChart();
+      });
     }
 
     debounce(func, wait) {
@@ -495,6 +522,46 @@
         // Trigger a resize event to ensure the chart redraws correctly if it's now visible
         window.dispatchEvent(new Event('resize'));
       }
+    }
+
+    setupModalEventListeners() {
+      const uploadModal = document.getElementById('uploadModal');
+      if (uploadModal) {
+        uploadModal.addEventListener('hidden.bs.modal', this.handleModalHidden.bind(this));
+      }
+    }
+
+    handleModalHidden() {
+      const uploadStatus = document.getElementById('uploadStatus');
+      if (uploadStatus) {
+        uploadStatus.textContent = '';
+        uploadStatus.className = '';
+      }
+
+      // Focus on the main page
+      this.focusMainPage();
+    }
+
+    focusMainPage() {
+      // Focus on an important element in the main page
+      const mainElement = document.getElementById('mainContent') || document.body;
+      mainElement.focus();
+    }
+
+    showLoadingIndicator() {
+      // Show a loading indicator in the main UI
+    }
+
+    hideLoadingIndicator() {
+      // Hide the loading indicator
+    }
+
+    showSuccessMessage(message) {
+      // Show a success message in the main UI
+    }
+
+    showErrorMessage(message) {
+      // Show an error message in the main UI
     }
   }
 
